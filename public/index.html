@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Chat</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="app">
+    <section id="home" class="card">
+      <h1>URL Chat</h1>
+      <p>URLを作って、そのURLを相手に送るだけ。</p>
+      <button id="createRoom">チャットルームを作る</button>
+    </section>
+
+    <section id="chat" class="chat hidden">
+      <header class="chatHeader">
+        <div>
+          <strong>URL Chat</strong>
+          <span id="status">接続中…</span>
+        </div>
+        <button id="copyUrl">URLをコピー</button>
+      </header>
+
+      <div id="messages" class="messages"></div>
+
+      <form id="form" class="composer">
+        <input id="name" maxlength="30" placeholder="名前" value="匿名">
+        <input id="text" maxlength="2000" autocomplete="off" placeholder="メッセージを入力…">
+        <button>送信</button>
+      </form>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
