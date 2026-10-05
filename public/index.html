@@ -3,35 +3,47 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>URL Chat</title>
+  <title>URLチャット</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <main class="app">
-    <section id="home" class="card">
-      <h1>URL Chat</h1>
-      <p>URLを作って、そのURLを相手に送るだけ。</p>
-      <button id="createRoom">チャットルームを作る</button>
-    </section>
+  <main class="container">
+    <section class="card">
+      <h1>URLチャット</h1>
+      <p class="sub">URLを共有するだけで一緒にチャットできます</p>
 
-    <section id="chat" class="chat hidden">
-      <header class="chatHeader">
-        <div>
-          <strong>URL Chat</strong>
-          <span id="status">接続中…</span>
+      <div id="startView">
+        <label for="name">名前</label>
+        <input id="name" maxlength="30" placeholder="名前を入力">
+
+        <button id="createBtn">新しいチャットを作る</button>
+
+        <p class="hint">作ったチャットのURLを相手に送ってください</p>
+      </div>
+
+      <div id="chatView" hidden>
+        <div class="roombar">
+          <input id="roomUrl" readonly>
+          <button id="copyBtn">URLをコピー</button>
         </div>
-        <button id="copyUrl">URLをコピー</button>
-      </header>
 
-      <div id="messages" class="messages"></div>
+        <div class="savebar">
+          <button id="saveBtn" type="button">トークを保存</button>
+          <button id="clearBtn" type="button" class="secondary">保存を削除</button>
+          <span>保存はこの端末のブラウザに残ります</span>
+        </div>
 
-      <form id="form" class="composer">
-        <input id="name" maxlength="30" placeholder="名前" value="匿名">
-        <input id="text" maxlength="2000" autocomplete="off" placeholder="メッセージを入力…">
-        <button>送信</button>
-      </form>
+        <div id="status" class="status">接続中...</div>
+        <div id="messages" class="messages"></div>
+
+        <form id="sendForm" class="send">
+          <input id="text" autocomplete="off" maxlength="1000" placeholder="メッセージを入力..." required>
+          <button type="submit">送信</button>
+        </form>
+      </div>
     </section>
   </main>
+
   <script src="/app.js"></script>
 </body>
 </html>
