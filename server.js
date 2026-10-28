@@ -29,7 +29,7 @@ function makeRoomId() {
   return id;
 }
 
-app.get("/api/room", (_req, res) => {
+app.post("/api/room", (_req, res) => {
   const id = makeRoomId();
   rooms.set(id, { messages: [], clients: new Set(), createdAt: Date.now() });
   res.status(201).json({ id });
