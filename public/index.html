@@ -19,13 +19,13 @@
         <form id="joinForm">
           <label for="name">あなたの名前</label>
           <input id="name" maxlength="30" placeholder="例：さくら" autocomplete="nickname" required>
-          <label for="roomNumber">ルームナンバー</label>
-          <input id="roomNumber" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="6桁の番号を入力" aria-describedby="roomHint">
-          <p class="hint" id="roomHint">既存のルームに入る場合は、共有された6桁の番号を入力してください。</p>
-          <button id="joinBtn" class="primary" type="submit">番号を入力して入室 <span>→</span></button>
+          <label for="roomNumber">ルームナンバー（6桁）</label>
+          <input id="roomNumber" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="例：123456" aria-describedby="roomHint">
+          <p class="hint" id="roomHint">参加する場合は、共有された番号を入力して「入室」。自分で作る場合は、好きな番号を入力して「この番号で作成」。空欄なら番号を自動で決めます。</p>
+          <button id="joinBtn" class="primary" type="submit">入力した番号のルームに入室 <span>→</span></button>
         </form>
-        <div class="or"><span>または</span></div>
-        <button id="createBtn" class="secondary full" type="button">＋ 新しいルームを作る</button>
+        <div class="or"><span>新しいルームを作成</span></div>
+        <button id="createBtn" class="secondary full" type="button">＋ この番号で作成（空欄なら自動）</button>
         <p id="homeError" class="error" role="alert" hidden></p>
       </div>
 
