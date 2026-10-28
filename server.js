@@ -28,8 +28,20 @@ function makeRoomId() {
   return id;
 }
 
-app.post("/api/room", (_req, res) => {
-  const id = makeRoomId();
+app.post("/api/room", (req, res) => {
+  const requestedId = req.body?.id;
+  let id;
+  if (requestedId !== undefined && requestedId !== null && requestedId !== "") {
+    if (!validRoomId(requestedId)) {
+      return res.status(400).json({ error: "ルームナンバーは6桁の数字で入力してください。" });
+    }
+    if (rooms.has(requestedId)) {
+      return res.status(409).json({ error: "その番号はすでに使われています。別の番号を選んでください。" });
+    }
+    id = requestedId;
+  } else {
+    id = makeRoomId();
+  }
   rooms.set(id, { messages: [], clients: new Map(), createdAt: Date.now() });
   res.status(201).json({ id });
 });
@@ -77,7 +89,6 @@ wss.on("connection", (ws, _request, roomId) => {
     ws.close(1008, "Room not found");
     return;
   }
-  // MapのキーはWebSocket接続。複数端末で同じ表示名でも人数は接続数で数える。
   room.clients.set(ws, { name: "参加者", clientId: null, identified: false });
   ws.send(JSON.stringify({ type: "history", messages: room.messages.slice(-100) }));
   broadcastParticipants(room);
