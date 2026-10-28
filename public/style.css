@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
-:root{font-family:'DM Sans','Noto Sans JP',sans-serif;color:#252a42;background:#f5f7fb;font-synthesis:none;text-rendering:optimizeLegibility}
+:root{font-family:'DM Sans','Noto Sans JP',sans-serif;color:#252a42;background:var(--page-bg,#f5f7fb);font-synthesis:none;text-rendering:optimizeLegibility}
 *{box-sizing:border-box}
-body{margin:0;min-width:320px;min-height:100vh}
+body{margin:0;min-width:320px;min-height:100vh;background:var(--page-bg,#f5f7fb);transition:background .2s}
 button,input{font:inherit}
 button{cursor:pointer;transition:background .15s,transform .15s}
 button:disabled{opacity:.6;cursor:wait}
@@ -12,6 +12,17 @@ button:disabled{opacity:.6;cursor:wait}
 .eyebrow{font-size:10px;font-weight:700;letter-spacing:2px;color:#858ba5;margin:0 0 7px}
 h1{font-size:30px;letter-spacing:-1.3px;margin:0;color:#222943}
 h1 span{color:#6977df}
+.theme-settings{margin:0 0 24px;padding:13px 14px;background:#ffffffb8;border:1px solid #e8eaf2;border-radius:14px}
+.theme-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.theme-heading label{margin:0;color:#4a5067}
+.theme-heading>span,.theme-note{font-size:10px;color:#9297a9}
+.theme-controls{display:flex;align-items:center;gap:10px;margin-top:10px}
+#backgroundColor{width:38px;height:34px;min-width:38px;padding:3px;border-radius:9px;cursor:pointer;background:#fff}
+.color-presets{display:flex;align-items:center;gap:7px;flex:1;flex-wrap:wrap}
+.color-swatch{width:25px;height:25px;min-width:25px;padding:0;border-radius:50%;background:var(--swatch);border:2px solid #fff;box-shadow:0 0 0 1px #d9dce8}
+.color-swatch:hover,.color-swatch:focus-visible{box-shadow:0 0 0 2px #6878e4}
+.reset-theme{padding:7px 8px;background:#f0f1f6;color:#626a80;font-size:10px;white-space:nowrap}
+.theme-note{margin:8px 0 0}
 .sub{color:#858ba0;font-size:14px;margin:10px 0 27px}
 label{display:block;font-size:12px;font-weight:700;margin:18px 0 8px;color:#4a5067}
 input{width:100%;height:48px;border:1px solid #e1e4ef;border-radius:11px;padding:0 14px;outline:none;color:#252b42;background:#fcfcfe;font-size:16px}
@@ -48,7 +59,7 @@ button{border:0;border-radius:11px;padding:12px 15px;font-size:13px;font-weight:
 .savebar span{font-size:10px;color:#979caf}
 .status{font-size:11px;color:#8b91a5;margin:12px 0 8px}
 .status.connected{color:#329b7d}.status.disconnected{color:#c25c5c}
-.messages{height:45vh;min-height:260px;max-height:520px;overflow-y:auto;border:1px solid #eceef5;border-radius:14px;padding:14px;background:#fbfbfe;display:flex;flex-direction:column;gap:12px}
+.messages{height:45vh;min-height:260px;max-height:520px;overflow-y:auto;border:1px solid #eceef5;border-radius:14px;padding:14px;background:color-mix(in srgb,var(--page-bg,#f5f7fb) 55%,white);display:flex;flex-direction:column;gap:12px}
 .message{display:flex;flex-direction:column;align-items:flex-start;max-width:88%;margin:0}
 .message.mine{align-self:flex-end;align-items:flex-end}
 .message.theirs{align-self:flex-start;align-items:flex-start}
@@ -69,6 +80,9 @@ button{border:0;border-radius:11px;padding:12px 15px;font-size:13px;font-weight:
  .card{padding:22px 17px;border-radius:19px}
  h1{font-size:27px}
  .sub{margin-bottom:22px}
+ .theme-controls{gap:7px}
+ .color-presets{gap:6px}
+ .theme-heading>span{font-size:9px}
  .room-banner{padding:12px;gap:8px}
  .room-banner strong{font-size:23px;letter-spacing:3px}
  .room-banner button{font-size:11px;padding:10px}
