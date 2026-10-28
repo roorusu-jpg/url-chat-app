@@ -145,14 +145,24 @@ function appendMessage(message) {
 async function createRoom() {
   clearHomeError();
   currentName = nameInput.value.trim().slice(0, 30);
+  const requestedId = roomNumberInput.value.trim();
   if (!currentName) {
     nameInput.focus();
     showHomeError("先に名前を入力してください。");
     return;
   }
+  if (requestedId && !/^\d{6}$/.test(requestedId)) {
+    roomNumberInput.focus();
+    showHomeError("ルームナンバーは6桁の数字で入力してください。");
+    return;
+  }
   createBtn.disabled = true;
   try {
-    const response = await fetch("/api/room", { method: "POST" });
+    const response = await fetch("/api/room", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestedId ? { id: requestedId } : {})
+    });
     const data = await response.json();
     if (!response.ok || !data.id) throw new Error(data.error || "ルームを作成できませんでした。");
     localStorage.setItem("chatName", currentName);
