@@ -15,6 +15,8 @@ const saveBtn = document.getElementById("saveBtn");
 const clearBtn = document.getElementById("clearBtn");
 const backBtn = document.getElementById("backBtn");
 const homeError = document.getElementById("homeError");
+const participantCount = document.getElementById("participantCount");
+const participantList = document.getElementById("participantList");
 
 let ws = null;
 let roomId = null;
@@ -22,6 +24,18 @@ let currentName = localStorage.getItem("chatName") || "";
 let currentMessages = [];
 let savedBackup = [];
 let manualLeave = false;
+const clientId = getClientId();
+
+function getClientId() {
+  let id = localStorage.getItem("chatClientId");
+  if (!id) {
+    id = typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `client-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem("chatClientId", id);
+  }
+  return id;
+}
 
 nameInput.value = currentName;
 const urlMatch = location.pathname.match(/^\/room\/(\d{6})$/);
@@ -63,14 +77,15 @@ function renderMessages() {
   currentMessages.forEach(addMessage);
 }
 function addMessage(message) {
+  const mine = message.senderId === clientId;
   const wrap = document.createElement("article");
-  wrap.className = "message";
+  wrap.className = `message ${mine ? "mine" : "theirs"}`;
   wrap.dataset.messageId = message.id || "";
   const meta = document.createElement("div");
   meta.className = "meta";
   const time = new Date(message.time);
   const timeText = Number.isNaN(time.getTime()) ? "" : time.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
-  meta.textContent = `${message.name || "匿名"} · ${timeText}`;
+  meta.textContent = `${mine ? "あなた" : (message.name || "匿名")} · ${timeText}`;
   const body = document.createElement("div");
   body.className = "body";
   body.textContent = message.text;
@@ -84,6 +99,29 @@ function addSystem(text) {
   el.textContent = text;
   messagesEl.appendChild(el);
   messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+function renderParticipants(data) {
+  const participants = Array.isArray(data.participants) ? data.participants : [];
+  participantCount.textContent = String(Number.isFinite(data.count) ? data.count : participants.length);
+  participantList.replaceChildren();
+  if (!participants.length) {
+    const empty = document.createElement("span");
+    empty.className = "participant-empty";
+    empty.textContent = "参加者はいません";
+    participantList.appendChild(empty);
+    return;
+  }
+  participants.forEach(participant => {
+    const chip = document.createElement("span");
+    chip.className = "participant-chip";
+    const dot = document.createElement("span");
+    dot.className = "online-dot";
+    dot.setAttribute("aria-hidden", "true");
+    const name = document.createElement("span");
+    name.textContent = participant.clientId === clientId ? `${participant.name}（あなた）` : participant.name;
+    chip.append(dot, name);
+    participantList.appendChild(chip);
+  });
 }
 function setMessages(messages) {
   const seen = new Set();
@@ -170,6 +208,8 @@ async function enterRoom(id) {
   chatView.hidden = false;
   roomNumberDisplay.textContent = id;
   messagesEl.replaceChildren();
+  participantCount.textContent = "—";
+  participantList.replaceChildren();
   if (savedBackup.length) setMessages(savedBackup);
   setStatus("チャットに接続中…", "connecting");
 
@@ -178,10 +218,16 @@ async function enterRoom(id) {
   ws = socket;
   manualLeave = false;
   socket.addEventListener("open", () => {
-    if (ws === socket) setStatus("リアルタイム接続中", "connected");
+    if (ws !== socket) return;
+    setStatus("リアルタイム接続中", "connected");
+    socket.send(JSON.stringify({ type: "join", name: currentName, clientId }));
   });
   socket.addEventListener("close", () => {
-    if (ws === socket && !manualLeave) setStatus("接続が切れました。ページを再読み込みして再接続してください。", "disconnected");
+    if (ws === socket && !manualLeave) {
+      setStatus("接続が切れました。ページを再読み込みして再接続してください。", "disconnected");
+      participantCount.textContent = "—";
+      participantList.replaceChildren();
+    }
   });
   socket.addEventListener("error", () => {
     if (ws === socket) setStatus("接続エラー。しばらくしてから再読み込みしてください。", "disconnected");
@@ -202,6 +248,8 @@ async function enterRoom(id) {
       appendMessage(data.message);
     } else if (data.type === "system") {
       addSystem(data.text);
+    } else if (data.type === "participants") {
+      renderParticipants(data);
     }
   });
 }
@@ -242,7 +290,7 @@ sendForm.addEventListener("submit", event => {
   event.preventDefault();
   const text = textInput.value.trim();
   if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
-  ws.send(JSON.stringify({ name: currentName || "匿名", text }));
+  ws.send(JSON.stringify({ type: "message", text }));
   textInput.value = "";
   textInput.focus();
 });
@@ -257,7 +305,6 @@ backBtn.addEventListener("click", () => {
 });
 window.addEventListener("popstate", () => location.reload());
 if (urlMatch) {
-  // Direct links still work, but room numbers can also be entered on the home screen.
   fetch(`/api/room/${urlMatch[1]}`)
     .then(response => response.ok ? enterRoom(urlMatch[1]) : null)
     .catch(() => {});
