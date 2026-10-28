@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#f5f7fb">
-  <title>Tomodachi Chat</title>
+  <title>Friend Chat</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -12,8 +12,28 @@
     <section class="card">
       <div class="brand-mark" aria-hidden="true">✦</div>
       <p class="eyebrow">SIMPLE GROUP CHAT</p>
-      <h1>Tomodachi <span>Chat</span></h1>
+      <h1>Friend <span>Chat</span></h1>
       <p class="sub">ルームナンバーで、気軽につながろう。</p>
+
+      <section class="theme-settings" aria-label="背景色の設定">
+        <div class="theme-heading">
+          <label for="backgroundColor">背景色</label>
+          <span>好きな色にカスタマイズ</span>
+        </div>
+        <div class="theme-controls">
+          <input id="backgroundColor" type="color" value="#f5f7fb" aria-label="背景色を選ぶ">
+          <div class="color-presets" aria-label="おすすめの背景色">
+            <button type="button" class="color-swatch" data-color="#f5f7fb" style="--swatch:#f5f7fb" aria-label="ライトグレー" title="ライトグレー"></button>
+            <button type="button" class="color-swatch" data-color="#eaf4ff" style="--swatch:#eaf4ff" aria-label="スカイブルー" title="スカイブルー"></button>
+            <button type="button" class="color-swatch" data-color="#eaf8ef" style="--swatch:#eaf8ef" aria-label="ミントグリーン" title="ミントグリーン"></button>
+            <button type="button" class="color-swatch" data-color="#fff0f5" style="--swatch:#fff0f5" aria-label="さくらピンク" title="さくらピンク"></button>
+            <button type="button" class="color-swatch" data-color="#fff6df" style="--swatch:#fff6df" aria-label="クリームイエロー" title="クリームイエロー"></button>
+            <button type="button" class="color-swatch" data-color="#eeeaff" style="--swatch:#eeeaff" aria-label="ラベンダー" title="ラベンダー"></button>
+          </div>
+          <button id="resetBackgroundBtn" type="button" class="reset-theme">リセット</button>
+        </div>
+        <p class="theme-note">選んだ色はこの端末のブラウザに保存されます。</p>
+      </section>
 
       <div id="startView">
         <form id="joinForm">
