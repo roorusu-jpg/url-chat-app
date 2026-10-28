@@ -11,7 +11,6 @@ const PORT = process.env.PORT || 3000;
 const publicDir = path.join(__dirname, "public");
 
 // 学習用のメモリ保存です。Renderの再起動時にルームと履歴は消えます。
-// 永続化が必要になったらRender PostgreSQL等を接続してください。
 const rooms = new Map();
 
 app.use(express.json());
@@ -31,7 +30,7 @@ function makeRoomId() {
 
 app.post("/api/room", (_req, res) => {
   const id = makeRoomId();
-  rooms.set(id, { messages: [], clients: new Set(), createdAt: Date.now() });
+  rooms.set(id, { messages: [], clients: new Map(), createdAt: Date.now() });
   res.status(201).json({ id });
 });
 
@@ -78,9 +77,10 @@ wss.on("connection", (ws, _request, roomId) => {
     ws.close(1008, "Room not found");
     return;
   }
-  room.clients.add(ws);
+  // MapのキーはWebSocket接続。複数端末で同じ表示名でも人数は接続数で数える。
+  room.clients.set(ws, { name: "参加者", clientId: null, identified: false });
   ws.send(JSON.stringify({ type: "history", messages: room.messages.slice(-100) }));
-  broadcast(room, { type: "system", text: "参加者がチャットに接続しました" }, ws);
+  broadcastParticipants(room);
 
   ws.on("message", (raw) => {
     let payload;
@@ -89,13 +89,29 @@ wss.on("connection", (ws, _request, roomId) => {
     } catch {
       return;
     }
-    const name = typeof payload.name === "string" ? payload.name.trim().slice(0, 30) : "";
+
+    if (payload.type === "join") {
+      const participant = room.clients.get(ws);
+      if (!participant) return;
+      participant.name = typeof payload.name === "string" ? payload.name.trim().slice(0, 30) || "匿名" : "匿名";
+      participant.clientId = typeof payload.clientId === "string" ? payload.clientId.slice(0, 80) : null;
+      const firstJoin = !participant.identified;
+      participant.identified = true;
+      broadcastParticipants(room);
+      if (firstJoin) broadcast(room, { type: "system", text: `${participant.name} さんが参加しました` }, ws);
+      return;
+    }
+
+    if (payload.type !== "message") return;
+    const participant = room.clients.get(ws);
+    if (!participant || !participant.identified) return;
     const text = typeof payload.text === "string" ? payload.text.trim().slice(0, 1000) : "";
     if (!text) return;
     const message = {
       id: crypto.randomUUID(),
       room: roomId,
-      name: name || "匿名",
+      senderId: participant.clientId,
+      name: participant.name,
       text,
       time: new Date().toISOString()
     };
@@ -105,16 +121,29 @@ wss.on("connection", (ws, _request, roomId) => {
   });
 
   ws.on("close", () => {
+    const participant = room.clients.get(ws);
     room.clients.delete(ws);
+    broadcastParticipants(room);
+    if (participant?.identified) broadcast(room, { type: "system", text: `${participant.name} さんが退出しました` });
   });
   ws.on("error", () => {
     room.clients.delete(ws);
+    broadcastParticipants(room);
   });
 });
 
+function broadcastParticipants(room) {
+  const participants = [...room.clients.values()].map((participant) => ({
+    name: participant.name,
+    clientId: participant.clientId,
+    identified: participant.identified
+  }));
+  broadcast(room, { type: "participants", count: room.clients.size, participants });
+}
+
 function broadcast(room, payload, except = null) {
   const encoded = JSON.stringify(payload);
-  for (const client of room.clients) {
+  for (const client of room.clients.keys()) {
     if (client !== except && client.readyState === WebSocket.OPEN) {
       client.send(encoded);
     }
