@@ -33,17 +33,30 @@ button{border:0;border-radius:11px;padding:12px 15px;font-size:13px;font-weight:
 .room-label{font-size:9px;font-weight:700;letter-spacing:1.6px;color:#8a91bd}
 .room-banner strong{font-size:26px;letter-spacing:4px;color:#5968d4}
 .room-banner button{flex-shrink:0}
+.participants-panel{margin:12px 0 4px;padding:13px 14px;background:#f9faff;border:1px solid #eceef8;border-radius:13px}
+.participants-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px}
+.participants-heading strong{font-size:13px}
+.participants-heading>span{color:#7d849d;font-size:11px}
+.participants-heading b{color:#5968d4;font-size:15px}
+.participant-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.participant-chip{display:inline-flex;align-items:center;gap:7px;max-width:100%;padding:6px 10px;background:#fff;border:1px solid #e7eaf5;border-radius:999px;font-size:11px;color:#505873;overflow-wrap:anywhere}
+.online-dot{width:7px;height:7px;flex-shrink:0;border-radius:50%;background:#39b68b}
+.participant-empty{font-size:11px;color:#9ba1b2}
 .savebar{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #eff0f5;flex-wrap:wrap}
 .savebar button{font-size:11px;padding:9px 11px;background:#6878e4;color:#fff}
 .savebar .light-button{background:#f0f1f6;color:#626a80}
 .savebar span{font-size:10px;color:#979caf}
 .status{font-size:11px;color:#8b91a5;margin:12px 0 8px}
 .status.connected{color:#329b7d}.status.disconnected{color:#c25c5c}
-.messages{height:45vh;min-height:260px;max-height:520px;overflow-y:auto;border:1px solid #eceef5;border-radius:14px;padding:14px;background:#fbfbfe}
-.message{margin-bottom:13px}
+.messages{height:45vh;min-height:260px;max-height:520px;overflow-y:auto;border:1px solid #eceef5;border-radius:14px;padding:14px;background:#fbfbfe;display:flex;flex-direction:column;gap:12px}
+.message{display:flex;flex-direction:column;align-items:flex-start;max-width:88%;margin:0}
+.message.mine{align-self:flex-end;align-items:flex-end}
+.message.theirs{align-self:flex-start;align-items:flex-start}
 .message .meta{font-size:11px;font-weight:600;color:#858ba0;margin-bottom:5px}
-.message .body{display:inline-block;max-width:94%;padding:10px 13px;border-radius:4px 13px 13px 13px;background:#edf0fb;color:#434a63;font-size:13px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
-.system{text-align:center;color:#a0a5b4;font-size:10px;margin:12px 0}
+.message.mine .meta{text-align:right}
+.message .body{display:inline-block;max-width:100%;padding:10px 13px;border-radius:4px 13px 13px 13px;background:#edf0fb;color:#434a63;font-size:13px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.message.mine .body{background:#6878e4;color:#fff;border-radius:13px 4px 13px 13px}
+.system{text-align:center;align-self:center;color:#a0a5b4;font-size:10px;margin:3px 0;max-width:100%}
 .send{display:flex;gap:8px;margin-top:12px}
 .send input{flex:1;min-width:0}
 .send-button{min-width:70px;background:#6878e4;color:white}
@@ -62,5 +75,6 @@ button{border:0;border-radius:11px;padding:12px 15px;font-size:13px;font-weight:
  .messages{height:48dvh;min-height:240px}
  .savebar span{width:100%}
  .send-button{min-width:64px}
+ .message{max-width:92%}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
