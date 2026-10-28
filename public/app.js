@@ -17,6 +17,9 @@ const backBtn = document.getElementById("backBtn");
 const homeError = document.getElementById("homeError");
 const participantCount = document.getElementById("participantCount");
 const participantList = document.getElementById("participantList");
+const backgroundColorInput = document.getElementById("backgroundColor");
+const resetBackgroundBtn = document.getElementById("resetBackgroundBtn");
+const DEFAULT_BACKGROUND = "#f5f7fb";
 
 let ws = null;
 let roomId = null;
@@ -38,6 +41,23 @@ function getClientId() {
 }
 
 nameInput.value = currentName;
+
+function applyBackgroundColor(color) {
+  if (!/^#[0-9a-f]{6}$/i.test(color)) color = DEFAULT_BACKGROUND;
+  document.documentElement.style.setProperty("--page-bg", color);
+  backgroundColorInput.value = color;
+  try { localStorage.setItem("friendChatBackgroundColor", color); } catch {}
+}
+let savedBackgroundColor = DEFAULT_BACKGROUND;
+try {
+  savedBackgroundColor = localStorage.getItem("friendChatBackgroundColor") || DEFAULT_BACKGROUND;
+} catch {}
+applyBackgroundColor(savedBackgroundColor);
+backgroundColorInput.addEventListener("input", () => applyBackgroundColor(backgroundColorInput.value));
+document.querySelectorAll(".color-swatch").forEach(button => {
+  button.addEventListener("click", () => applyBackgroundColor(button.dataset.color));
+});
+resetBackgroundBtn.addEventListener("click", () => applyBackgroundColor(DEFAULT_BACKGROUND));
 const urlMatch = location.pathname.match(/^\/room\/(\d{6})$/);
 if (urlMatch) roomNumberInput.value = urlMatch[1];
 
