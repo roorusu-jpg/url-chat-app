@@ -19,12 +19,9 @@
         <form id="joinForm">
           <label for="name">あなたの名前</label>
           <input id="name" maxlength="30" placeholder="例：さくら" autocomplete="nickname" required>
-
           <label for="roomNumber">ルームナンバー</label>
-          <input id="roomNumber" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
-            placeholder="6桁の番号を入力" aria-describedby="roomHint">
+          <input id="roomNumber" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="6桁の番号を入力" aria-describedby="roomHint">
           <p class="hint" id="roomHint">既存のルームに入る場合は、共有された6桁の番号を入力してください。</p>
-
           <button id="joinBtn" class="primary" type="submit">番号を入力して入室 <span>→</span></button>
         </form>
         <div class="or"><span>または</span></div>
@@ -38,6 +35,10 @@
           <button id="copyBtn" class="secondary" type="button">番号をコピー</button>
         </div>
         <p class="hint">友だちにこの6桁の番号を伝えて、同じルームに参加してもらおう。</p>
+        <section class="participants-panel" aria-label="参加者一覧">
+          <div class="participants-heading"><strong>参加者</strong><span><b id="participantCount">—</b> 人が接続中</span></div>
+          <div id="participantList" class="participant-list"><span class="participant-empty">接続待ち…</span></div>
+        </section>
         <div class="savebar">
           <button id="saveBtn" type="button">トークを保存</button>
           <button id="clearBtn" type="button" class="light-button">保存を削除</button>
