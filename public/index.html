@@ -3,47 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>URLチャット</title>
+  <meta name="theme-color" content="#f5f7fb">
+  <title>Tomodachi Chat</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <main class="container">
     <section class="card">
-      <h1>URLチャット</h1>
-      <p class="sub">URLを共有するだけで一緒にチャットできます</p>
+      <div class="brand-mark" aria-hidden="true">✦</div>
+      <p class="eyebrow">SIMPLE GROUP CHAT</p>
+      <h1>Tomodachi <span>Chat</span></h1>
+      <p class="sub">ルームナンバーで、気軽につながろう。</p>
 
       <div id="startView">
-        <label for="name">名前</label>
-        <input id="name" maxlength="30" placeholder="名前を入力">
+        <form id="joinForm">
+          <label for="name">あなたの名前</label>
+          <input id="name" maxlength="30" placeholder="例：さくら" autocomplete="nickname" required>
 
-        <button id="createBtn">新しいチャットを作る</button>
+          <label for="roomNumber">ルームナンバー</label>
+          <input id="roomNumber" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+            placeholder="6桁の番号を入力" aria-describedby="roomHint">
+          <p class="hint" id="roomHint">既存のルームに入る場合は、共有された6桁の番号を入力してください。</p>
 
-        <p class="hint">作ったチャットのURLを相手に送ってください</p>
+          <button id="joinBtn" class="primary" type="submit">番号を入力して入室 <span>→</span></button>
+        </form>
+        <div class="or"><span>または</span></div>
+        <button id="createBtn" class="secondary full" type="button">＋ 新しいルームを作る</button>
+        <p id="homeError" class="error" role="alert" hidden></p>
       </div>
 
       <div id="chatView" hidden>
-        <div class="roombar">
-          <input id="roomUrl" readonly>
-          <button id="copyBtn">URLをコピー</button>
+        <div class="room-banner">
+          <div><span class="room-label">ROOM NUMBER</span><strong id="roomNumberDisplay">000000</strong></div>
+          <button id="copyBtn" class="secondary" type="button">番号をコピー</button>
         </div>
-
+        <p class="hint">友だちにこの6桁の番号を伝えて、同じルームに参加してもらおう。</p>
         <div class="savebar">
           <button id="saveBtn" type="button">トークを保存</button>
-          <button id="clearBtn" type="button" class="secondary">保存を削除</button>
-          <span>保存はこの端末のブラウザに残ります</span>
+          <button id="clearBtn" type="button" class="light-button">保存を削除</button>
+          <span>保存はこの端末のブラウザ内</span>
         </div>
-
         <div id="status" class="status">接続中...</div>
-        <div id="messages" class="messages"></div>
-
+        <div id="messages" class="messages" aria-live="polite"></div>
         <form id="sendForm" class="send">
-          <input id="text" autocomplete="off" maxlength="1000" placeholder="メッセージを入力..." required>
-          <button type="submit">送信</button>
+          <input id="text" autocomplete="off" maxlength="1000" placeholder="メッセージを入力..." required aria-label="メッセージ">
+          <button type="submit" class="send-button" aria-label="送信">送信</button>
         </form>
+        <button id="backBtn" class="back-button" type="button">← ルーム選択に戻る</button>
       </div>
     </section>
+    <p class="page-note">PC・スマートフォン対応 · 気軽に話せるグループチャット</p>
   </main>
-
   <script src="/app.js"></script>
 </body>
 </html>
