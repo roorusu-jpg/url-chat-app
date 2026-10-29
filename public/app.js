@@ -167,7 +167,7 @@ function addMessage(message) {
     text.textContent = message.text;
     body.appendChild(text);
   }
-  if (typeof message.image === "string" && /^data:image\\/(jpeg|png|webp);base64,/.test(message.image)) {
+  if (typeof message.image === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(message.image)) {
     const image = document.createElement("img");
     image.className = "message-photo";
     image.src = message.image;
