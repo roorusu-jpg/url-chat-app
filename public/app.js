@@ -20,6 +20,12 @@ const participantList = document.getElementById("participantList");
 const backgroundColorInput = document.getElementById("backgroundColor");
 const resetBackgroundBtn = document.getElementById("resetBackgroundBtn");
 const DEFAULT_BACKGROUND = "#f5f7fb";
+const accentColorInput = document.getElementById("accentColor");
+const resetAccentBtn = document.getElementById("resetAccentBtn");
+const DEFAULT_ACCENT = "#6878e4";
+const DEFAULT_AVATAR = "🙂";
+const AVATARS = ["🙂", "🐱", "🐶", "🐼", "🐸", "🦊", "🐰", "⭐", "🌸", "🎧"];
+let currentAvatar = DEFAULT_AVATAR;
 
 let ws = null;
 let roomId = null;
@@ -41,6 +47,45 @@ function getClientId() {
 }
 
 nameInput.value = currentName;
+
+function applyAccentColor(color) {
+  if (!/^#[0-9a-f]{6}$/i.test(color)) color = DEFAULT_ACCENT;
+  const hex = color.slice(1);
+  const rgb = [0, 2, 4].map(index => parseInt(hex.slice(index, index + 2), 16));
+  const darker = rgb.map(value => Math.round(value * 0.82).toString(16).padStart(2, "0")).join("");
+  document.documentElement.style.setProperty("--accent", color);
+  document.documentElement.style.setProperty("--accent-dark", "#" + darker);
+  accentColorInput.value = color;
+  try { localStorage.setItem("friendChatAccentColor", color); } catch {}
+}
+let savedAccentColor = DEFAULT_ACCENT;
+try { savedAccentColor = localStorage.getItem("friendChatAccentColor") || DEFAULT_ACCENT; } catch {}
+applyAccentColor(savedAccentColor);
+accentColorInput.addEventListener("input", () => applyAccentColor(accentColorInput.value));
+document.querySelectorAll(".accent-swatch").forEach(button => {
+  button.addEventListener("click", () => applyAccentColor(button.dataset.accent));
+});
+resetAccentBtn.addEventListener("click", () => applyAccentColor(DEFAULT_ACCENT));
+
+function loadAvatar() {
+  try {
+    const saved = localStorage.getItem("friendChatAvatar");
+    return AVATARS.includes(saved) ? saved : DEFAULT_AVATAR;
+  } catch { return DEFAULT_AVATAR; }
+}
+function selectAvatar(avatar) {
+  currentAvatar = AVATARS.includes(avatar) ? avatar : DEFAULT_AVATAR;
+  try { localStorage.setItem("friendChatAvatar", currentAvatar); } catch {}
+  document.querySelectorAll(".avatar-option").forEach(button => {
+    const selected = button.dataset.avatar === currentAvatar;
+    button.classList.toggle("selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+}
+selectAvatar(loadAvatar());
+document.querySelectorAll(".avatar-option").forEach(button => {
+  button.addEventListener("click", () => selectAvatar(button.dataset.avatar));
+}
 
 function applyBackgroundColor(color) {
   if (!/^#[0-9a-f]{6}$/i.test(color)) color = DEFAULT_BACKGROUND;
@@ -105,7 +150,10 @@ function addMessage(message) {
   meta.className = "meta";
   const time = new Date(message.time);
   const timeText = Number.isNaN(time.getTime()) ? "" : time.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
-  meta.textContent = `${mine ? "あなた" : (message.name || "匿名")} · ${timeText}`;
+  const avatar = document.createElement("span");
+  avatar.className = "message-avatar";
+  avatar.textContent = AVATARS.includes(message.avatar) ? message.avatar : DEFAULT_AVATAR;
+  meta.append(avatar, document.createTextNode(` ${mine ? "あなた" : (message.name || "匿名")} · ${timeText}`));
   const body = document.createElement("div");
   body.className = "body";
   body.textContent = message.text;
@@ -138,8 +186,11 @@ function renderParticipants(data) {
     dot.className = "online-dot";
     dot.setAttribute("aria-hidden", "true");
     const name = document.createElement("span");
+    const avatar = document.createElement("span");
+    avatar.className = "participant-avatar";
+    avatar.textContent = AVATARS.includes(participant.avatar) ? participant.avatar : DEFAULT_AVATAR;
     name.textContent = participant.clientId === clientId ? `${participant.name}（あなた）` : participant.name;
-    chip.append(dot, name);
+    chip.append(avatar, dot, name);
     participantList.appendChild(chip);
   });
 }
@@ -250,7 +301,7 @@ async function enterRoom(id) {
   socket.addEventListener("open", () => {
     if (ws !== socket) return;
     setStatus("リアルタイム接続中", "connected");
-    socket.send(JSON.stringify({ type: "join", name: currentName, clientId }));
+    socket.send(JSON.stringify({ type: "join", name: currentName, clientId, avatar: currentAvatar }));
   });
   socket.addEventListener("close", () => {
     if (ws === socket && !manualLeave) {
