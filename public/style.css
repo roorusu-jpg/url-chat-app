@@ -16,7 +16,7 @@ h1 span{color:var(--accent)}
 .accent-settings{margin:0 0 24px;padding:13px 14px;background:color-mix(in srgb,var(--page-bg,#f5f7fb) 82%,white);border:1px solid color-mix(in srgb,var(--page-bg,#f5f7fb) 70%,#cbd0e0);border-radius:14px}
 .avatar-settings{margin:0 0 20px;padding:13px 14px;background:color-mix(in srgb,var(--page-bg,#f5f7fb) 82%,white);border:1px solid color-mix(in srgb,var(--page-bg,#f5f7fb) 70%,#cbd0e0);border-radius:14px}
 .avatar-picker{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}
-.avatar-option{width:40px;height:40px;padding:0;display:grid;place-items:center;font-size:22px;background:color-mix(in srgb,var(--page-bg,#f5f7fb) 70%,white);border:1px solid #dfe3ee;border-radius:12px}
+.avatar-option{min-width:40px;height:40px;padding:0 8px;display:grid;place-items:center;font-size:14px;background:color-mix(in srgb,var(--page-bg,#f5f7fb) 70%,white);border:1px solid #dfe3ee;border-radius:12px}
 .avatar-option.selected{border:2px solid var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent);background:white}
 .accent-swatch{width:25px;height:25px;min-width:25px;padding:0;border-radius:50%;background:var(--swatch);border:2px solid #fff;box-shadow:0 0 0 1px #d9dce8}
 .accent-swatch:hover,.accent-swatch:focus-visible{box-shadow:0 0 0 2px var(--accent)}
