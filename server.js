@@ -119,7 +119,7 @@ wss.on("connection", (ws, _request, roomId) => {
     const participant = room.clients.get(ws);
     if (!participant || !participant.identified) return;
     const text = typeof payload.text === "string" ? payload.text.trim().slice(0, 1000) : "";
-    const image = typeof payload.image === "string" && /^data:image\\/(jpeg|png|webp);base64,/.test(payload.image) && payload.image.length <= 400000 ? payload.image : null;
+    const image = typeof payload.image === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(payload.image) && payload.image.length <= 400000 ? payload.image : null;
     if (!text && !image) return;
     const message = {
       id: crypto.randomUUID(),
