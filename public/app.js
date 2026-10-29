@@ -23,8 +23,8 @@ const DEFAULT_BACKGROUND = "#f5f7fb";
 const accentColorInput = document.getElementById("accentColor");
 const resetAccentBtn = document.getElementById("resetAccentBtn");
 const DEFAULT_ACCENT = "#6878e4";
-const DEFAULT_AVATAR = "🙂";
-const AVATARS = ["🙂", "🐱", "🐶", "🐼", "🐸", "🦊", "🐰", "⭐", "🌸", "🎧"];
+const DEFAULT_AVATAR = "(＾▽＾)";
+const AVATARS = ["(＾▽＾)","(・ω・)","(￣▽￣)","(≧▽≦)","(｀・ω・´)","(¬‿¬)","(T_T)","(・∀・)","(´・ω・｀)","(ง •̀_•́)ง"];
 let currentAvatar = DEFAULT_AVATAR;
 
 let ws = null;
