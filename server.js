@@ -6,7 +6,7 @@ const { WebSocketServer, WebSocket } = require("ws");
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocketServer({ noServer: true });
+const wss = new WebSocketServer({ noServer: true, maxPayload: 600 * 1024 });
 const PORT = process.env.PORT || 3000;
 const publicDir = path.join(__dirname, "public");
 
@@ -119,7 +119,8 @@ wss.on("connection", (ws, _request, roomId) => {
     const participant = room.clients.get(ws);
     if (!participant || !participant.identified) return;
     const text = typeof payload.text === "string" ? payload.text.trim().slice(0, 1000) : "";
-    if (!text) return;
+    const image = typeof payload.image === "string" && /^data:image\\/(jpeg|png|webp);base64,/.test(payload.image) && payload.image.length <= 400000 ? payload.image : null;
+    if (!text && !image) return;
     const message = {
       id: crypto.randomUUID(),
       room: roomId,
@@ -127,6 +128,7 @@ wss.on("connection", (ws, _request, roomId) => {
       name: participant.name,
       avatar: participant.avatar,
       text,
+      ...(image ? { image } : {}),
       time: new Date().toISOString()
     };
     room.messages.push(message);
