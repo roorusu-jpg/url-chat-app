@@ -85,7 +85,7 @@ function selectAvatar(avatar) {
 selectAvatar(loadAvatar());
 document.querySelectorAll(".avatar-option").forEach(button => {
   button.addEventListener("click", () => selectAvatar(button.dataset.avatar));
-}
+});
 
 function applyBackgroundColor(color) {
   if (!/^#[0-9a-f]{6}$/i.test(color)) color = DEFAULT_BACKGROUND;
