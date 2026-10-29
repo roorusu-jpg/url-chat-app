@@ -11,6 +11,7 @@ const statusEl = document.getElementById("status");
 const messagesEl = document.getElementById("messages");
 const sendForm = document.getElementById("sendForm");
 const textInput = document.getElementById("text");
+const photoInput = document.getElementById("photoInput");
 const saveBtn = document.getElementById("saveBtn");
 const clearBtn = document.getElementById("clearBtn");
 const backBtn = document.getElementById("backBtn");
@@ -23,7 +24,7 @@ const DEFAULT_BACKGROUND = "#f5f7fb";
 const accentColorInput = document.getElementById("accentColor");
 const resetAccentBtn = document.getElementById("resetAccentBtn");
 const DEFAULT_ACCENT = "#6878e4";
-const APP_VERSION = "1.0.1";
+const APP_VERSION = "1.0.2";
 const versionLabel = `v${APP_VERSION}`;
 document.getElementById("appVersion").textContent = versionLabel;
 document.getElementById("appVersionFooter").textContent = versionLabel;
@@ -123,7 +124,8 @@ function loadSavedMessages(id) {
 }
 function saveMessages(id, messages) {
   try {
-    localStorage.setItem(storageKey(id), JSON.stringify(messages.slice(-100)));
+    const safeMessages = messages.slice(-100).map(message => message.image ? { ...message, image: undefined, text: message.text || "📷 写真（再読み込み後は画像を表示できません）" } : message);
+    localStorage.setItem(storageKey(id), JSON.stringify(safeMessages));
     return true;
   } catch {
     return false;
@@ -159,8 +161,20 @@ function addMessage(message) {
   avatar.textContent = AVATARS.includes(message.avatar) ? message.avatar : DEFAULT_AVATAR;
   meta.append(avatar, document.createTextNode(` ${mine ? "あなた" : (message.name || "匿名")} · ${timeText}`));
   const body = document.createElement("div");
-  body.className = "body";
-  body.textContent = message.text;
+  body.className = `body${message.image ? " photo-only" : ""}`;
+  if (message.text) {
+    const text = document.createElement("div");
+    text.textContent = message.text;
+    body.appendChild(text);
+  }
+  if (typeof message.image === "string" && /^data:image\\/(jpeg|png|webp);base64,/.test(message.image)) {
+    const image = document.createElement("img");
+    image.className = "message-photo";
+    image.src = message.image;
+    image.alt = "送信された写真";
+    image.loading = "lazy";
+    body.appendChild(image);
+  }
   wrap.append(meta, body);
   messagesEl.appendChild(wrap);
   messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -201,8 +215,8 @@ function renderParticipants(data) {
 function setMessages(messages) {
   const seen = new Set();
   currentMessages = messages.filter(message => {
-    if (!message || typeof message.text !== "string" || !message.text) return false;
-    const id = message.id || `${message.time}-${message.name}-${message.text}`;
+    if (!message || (typeof message.text !== "string" || !message.text) && typeof message.image !== "string") return false;
+    const id = message.id || `${message.time}-${message.name}-${message.text || "photo"}`;
     if (seen.has(id)) return false;
     seen.add(id);
     return true;
@@ -210,8 +224,8 @@ function setMessages(messages) {
   renderMessages();
 }
 function appendMessage(message) {
-  const id = message.id || `${message.time}-${message.name}-${message.text}`;
-  if (currentMessages.some(item => (item.id || `${item.time}-${item.name}-${item.text}`) === id)) return;
+  const id = message.id || `${message.time}-${message.name}-${message.text || "photo"}`;
+  if (currentMessages.some(item => (item.id || `${item.time}-${item.name}-${item.text || "photo"}`) === id)) return;
   currentMessages.push(message);
   currentMessages = currentMessages.slice(-100);
   addMessage(message);
@@ -371,12 +385,71 @@ clearBtn.addEventListener("click", () => {
   clearBtn.textContent = "削除しました";
   setTimeout(() => clearBtn.textContent = "保存を削除", 1500);
 });
+let selectedPhoto = null;
+photoInput.addEventListener("change", async () => {
+  const file = photoInput.files?.[0];
+  photoInput.value = "";
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    setStatus("画像ファイルを選んでください。", "disconnected");
+    return;
+  }
+  try {
+    selectedPhoto = await compressPhoto(file);
+    setStatus("写真を準備できました。送信ボタンを押してね。", "connected");
+    textInput.placeholder = "写真に添えるメッセージ（任意）";
+    textInput.focus();
+  } catch {
+    setStatus("写真を読み込めませんでした。別の画像を試してください。", "disconnected");
+  }
+});
+function compressPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("read failed"));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error("image failed"));
+      image.onload = () => {
+        const maxSide = 1280;
+        const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+        if (!context) return reject(new Error("canvas unavailable"));
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        let quality = 0.78;
+        let dataUrl = canvas.toDataURL("image/jpeg", quality);
+        while (dataUrl.length > 400000 && quality > 0.38) {
+          quality -= 0.08;
+          dataUrl = canvas.toDataURL("image/jpeg", quality);
+        }
+        if (dataUrl.length > 400000) return reject(new Error("image too large"));
+        resolve(dataUrl);
+      };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 sendForm.addEventListener("submit", event => {
   event.preventDefault();
   const text = textInput.value.trim();
-  if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
-  ws.send(JSON.stringify({ type: "message", text }));
+  if (!text && !selectedPhoto) return;
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    setStatus("接続してから送信してください。", "disconnected");
+    return;
+  }
+  const payload = { type: "message", text: text || (selectedPhoto ? "📷 写真" : "") };
+  if (selectedPhoto) payload.image = selectedPhoto;
+  ws.send(JSON.stringify(payload));
   textInput.value = "";
+  selectedPhoto = null;
+  textInput.placeholder = "メッセージを入力...";
+  setStatus("リアルタイム接続中", "connected");
   textInput.focus();
 });
 backBtn.addEventListener("click", () => {
