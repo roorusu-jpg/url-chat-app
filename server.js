@@ -89,7 +89,7 @@ wss.on("connection", (ws, _request, roomId) => {
     ws.close(1008, "Room not found");
     return;
   }
-  room.clients.set(ws, { name: "参加者", clientId: null, avatar: "(＾▽＾)", identified: false });
+  room.clients.set(ws, { name: "参加者", clientId: null, avatar: "😄", identified: false });
   ws.send(JSON.stringify({ type: "history", messages: room.messages.slice(-100) }));
   broadcastParticipants(room);
 
@@ -106,8 +106,8 @@ wss.on("connection", (ws, _request, roomId) => {
       if (!participant) return;
       participant.name = typeof payload.name === "string" ? payload.name.trim().slice(0, 30) || "匿名" : "匿名";
       participant.clientId = typeof payload.clientId === "string" ? payload.clientId.slice(0, 80) : null;
-      const allowedAvatars = ["(＾▽＾)","(・ω・)","(￣▽￣)","(≧▽≦)","(｀・ω・´)","(¬‿¬)","(T_T)","(・∀・)","(´・ω・｀)","(ง •̀_•́)ง"];
-      participant.avatar = allowedAvatars.includes(payload.avatar) ? payload.avatar : "(＾▽＾)";
+      const allowedAvatars = ["😄","😊","😂","😎","🥺","😍","😏","😴","😭","😡","🤔","😇"];
+      participant.avatar = allowedAvatars.includes(payload.avatar) ? payload.avatar : "😄";
       const firstJoin = !participant.identified;
       participant.identified = true;
       broadcastParticipants(room);
