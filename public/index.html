@@ -19,6 +19,13 @@
         <summary>📋 更新履歴を見る</summary>
         <div class="changelog-list">
           <article class="changelog-entry">
+            <div class="changelog-entry-heading"><strong>v1.0.2</strong><time datetime="2026-10-29">2026.10.29</time><span class="changelog-tag">NEW</span></div>
+            <ul>
+              <li>写真を選んでチャットに送信できるようにしました。</li>
+              <li>写真は送信前に縮小・圧縮します。</li>
+            </ul>
+          </article>
+          <article class="changelog-entry">
             <div class="changelog-entry-heading"><strong>v1.0.1</strong><time datetime="2026-10-29">2026.10.29</time><span class="changelog-tag">NEW</span></div>
             <ul>
               <li>アプリ内で更新履歴を確認できるようにしました。</li>
@@ -130,9 +137,12 @@
         <div id="status" class="status">接続中...</div>
         <div id="messages" class="messages" aria-live="polite"></div>
         <form id="sendForm" class="send">
-          <input id="text" autocomplete="off" maxlength="1000" placeholder="メッセージを入力..." required aria-label="メッセージ">
+          <label class="photo-button" for="photoInput" aria-label="写真を選ぶ" title="写真を選ぶ">📷</label>
+          <input id="photoInput" type="file" accept="image/*" hidden aria-label="送信する写真を選ぶ">
+          <input id="text" autocomplete="off" maxlength="1000" placeholder="メッセージを入力..." aria-label="メッセージ">
           <button type="submit" class="send-button" aria-label="送信">送信</button>
         </form>
+        <p class="photo-note">写真は自動で縮小します（1枚ずつ送信・最大約300KB）。
         <button id="backBtn" class="back-button" type="button">← ルーム選択に戻る</button>
       </div>
     </section>
