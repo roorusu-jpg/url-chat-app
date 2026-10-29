@@ -35,7 +35,46 @@
         <p class="theme-note">選んだ色はこの端末のブラウザに保存されます。</p>
       </section>
 
+      <section class="accent-settings" aria-label="テーマカラーの設定">
+        <div class="theme-heading">
+          <label for="accentColor">テーマカラー</label>
+          <span>ボタンや吹き出しの色</span>
+        </div>
+        <div class="theme-controls">
+          <input id="accentColor" type="color" value="#6878e4" aria-label="テーマカラーを選ぶ">
+          <div class="color-presets" aria-label="テーマカラーの候補">
+            <button type="button" class="accent-swatch" data-accent="#6878e4" style="--swatch:#6878e4" aria-label="ブルー" title="ブルー"></button>
+            <button type="button" class="accent-swatch" data-accent="#e45f91" style="--swatch:#e45f91" aria-label="ピンク" title="ピンク"></button>
+            <button type="button" class="accent-swatch" data-accent="#20a889" style="--swatch:#20a889" aria-label="ミント" title="ミント"></button>
+            <button type="button" class="accent-swatch" data-accent="#e28a36" style="--swatch:#e28a36" aria-label="オレンジ" title="オレンジ"></button>
+            <button type="button" class="accent-swatch" data-accent="#8b63d9" style="--swatch:#8b63d9" aria-label="パープル" title="パープル"></button>
+            <button type="button" class="accent-swatch" data-accent="#374151" style="--swatch:#374151" aria-label="チャコール" title="チャコール"></button>
+          </div>
+          <button id="resetAccentBtn" type="button" class="reset-theme">リセット</button>
+        </div>
+        <p class="theme-note">テーマカラーもこの端末に保存されます。</p>
+      </section>
+
       <div id="startView">
+        <section class="avatar-settings" aria-label="アイコン設定">
+          <div class="theme-heading">
+            <label>あなたのアイコン</label>
+            <span>好きな絵文字を選んでね</span>
+          </div>
+          <div id="avatarPicker" class="avatar-picker">
+            <button type="button" class="avatar-option" data-avatar="🙂" aria-label="笑顔">🙂</button>
+            <button type="button" class="avatar-option" data-avatar="🐱" aria-label="ねこ">🐱</button>
+            <button type="button" class="avatar-option" data-avatar="🐶" aria-label="いぬ">🐶</button>
+            <button type="button" class="avatar-option" data-avatar="🐼" aria-label="パンダ">🐼</button>
+            <button type="button" class="avatar-option" data-avatar="🐸" aria-label="かえる">🐸</button>
+            <button type="button" class="avatar-option" data-avatar="🦊" aria-label="きつね">🦊</button>
+            <button type="button" class="avatar-option" data-avatar="🐰" aria-label="うさぎ">🐰</button>
+            <button type="button" class="avatar-option" data-avatar="⭐" aria-label="星">⭐</button>
+            <button type="button" class="avatar-option" data-avatar="🌸" aria-label="さくら">🌸</button>
+            <button type="button" class="avatar-option" data-avatar="🎧" aria-label="ヘッドホン">🎧</button>
+          </div>
+          <p class="theme-note">選んだアイコンは入室後、参加者一覧やメッセージに表示されます。</p>
+        </section>
         <form id="joinForm">
           <label for="name">あなたの名前</label>
           <input id="name" maxlength="30" placeholder="例：さくら" autocomplete="nickname" required>
