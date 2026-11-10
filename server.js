@@ -115,6 +115,20 @@ wss.on("connection", (ws, _request, roomId) => {
       return;
     }
 
+    if (payload.type === "read") {
+      const reader = room.clients.get(ws);
+      if (!reader?.identified || typeof payload.messageId !== "string") return;
+      const target = room.messages.find(item => item.id === payload.messageId);
+      if (!target || !reader.clientId || target.senderId === reader.clientId) return;
+      if (!Array.isArray(target.readBy)) target.readBy = [];
+      if (!target.readBy.includes(reader.clientId)) {
+        target.readBy.push(reader.clientId);
+        target.readCount = target.readBy.length;
+        broadcast(room, { type: "read_update", messageId: target.id, readCount: target.readCount });
+      }
+      return;
+    }
+
     if (payload.type !== "message") return;
     const participant = room.clients.get(ws);
     if (!participant || !participant.identified) return;
@@ -129,7 +143,9 @@ wss.on("connection", (ws, _request, roomId) => {
       avatar: participant.avatar,
       text,
       ...(image ? { image } : {}),
-      time: new Date().toISOString()
+      time: new Date().toISOString(),
+      readBy: [],
+      readCount: 0
     };
     room.messages.push(message);
     room.messages = room.messages.slice(-100);
