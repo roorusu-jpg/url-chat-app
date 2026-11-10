@@ -341,6 +341,12 @@ async function enterRoom(id) {
     if (ws !== socket) return;
     setStatus("リアルタイム接続中", "connected");
     socket.send(JSON.stringify({ type: "join", name: currentName, clientId, avatar: currentAvatar }));
+    if (readObserver) {
+      currentMessages.filter(message => message.senderId !== clientId && message.id).forEach(message => {
+        const node = messagesEl.querySelector(`[data-message-id="${CSS.escape(message.id)}"]`);
+        if (node && !observedReadIds.has(message.id)) readObserver.observe(node);
+      });
+    }
   });
   socket.addEventListener("close", () => {
     if (ws === socket && !manualLeave) {
