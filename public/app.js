@@ -24,13 +24,27 @@ const DEFAULT_BACKGROUND = "#f5f7fb";
 const accentColorInput = document.getElementById("accentColor");
 const resetAccentBtn = document.getElementById("resetAccentBtn");
 const DEFAULT_ACCENT = "#6878e4";
-const APP_VERSION = "1.0.2";
+const APP_VERSION = "1.0.3";
 const versionLabel = `v${APP_VERSION}`;
 document.getElementById("appVersion").textContent = versionLabel;
 document.getElementById("appVersionFooter").textContent = versionLabel;
 const DEFAULT_AVATAR = "😄";
 const AVATARS = ["😄","😊","😂","😎","🥺","😍","😏","😴","😭","😡","🤔","😇"];
 let currentAvatar = DEFAULT_AVATAR;
+const observedReadIds = new Set();
+const readObserver = "IntersectionObserver" in window ? new IntersectionObserver(entries => {
+  for (const entry of entries) {
+    if (!entry.isIntersecting) continue;
+    const messageId = entry.target.dataset.messageId;
+    const message = currentMessages.find(item => item.id === messageId);
+    if (message && message.senderId !== clientId && messageId && !observedReadIds.has(messageId)) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) continue;
+      observedReadIds.add(messageId);
+      ws.send(JSON.stringify({ type: "read", messageId }));
+    }
+    readObserver.unobserve(entry.target);
+  }
+}, { threshold: 0.6 }) : null;
 
 let ws = null;
 let roomId = null;
@@ -176,7 +190,14 @@ function addMessage(message) {
     body.appendChild(image);
   }
   wrap.append(meta, body);
+  if (mine) {
+    const read = document.createElement("div");
+    read.className = "read-count";
+    read.textContent = `既読 ${Number.isFinite(message.readCount) ? message.readCount : 0}`;
+    wrap.appendChild(read);
+  }
   messagesEl.appendChild(wrap);
+  if (!mine && readObserver && message.id) readObserver.observe(wrap);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 function addSystem(text) {
@@ -349,6 +370,14 @@ async function enterRoom(id) {
       addSystem(data.text);
     } else if (data.type === "participants") {
       renderParticipants(data);
+    } else if (data.type === "read_update" && data.messageId) {
+      const message = currentMessages.find(item => item.id === data.messageId);
+      if (message) {
+        message.readCount = data.readCount;
+        const wrap = messagesEl.querySelector(`[data-message-id="${CSS.escape(data.messageId)}"]`);
+        const label = wrap?.querySelector(".read-count");
+        if (label && message.senderId === clientId) label.textContent = `既読 ${data.readCount}`;
+      }
     }
   });
 }
