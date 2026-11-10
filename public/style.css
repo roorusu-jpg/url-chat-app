@@ -121,3 +121,5 @@ button{border:0;border-radius:11px;padding:12px 15px;font-size:13px;font-weight:
 .message .body.photo-only{padding:0;background:transparent;overflow:hidden}
 .message.mine .body.photo-only{background:transparent}
 @media(max-width:520px){.photo-button{width:44px;height:48px}.message-photo{max-width:100%;max-height:300px}}
+
+.read-count{font-size:9px;color:#9297a9;margin:3px 2px 0;line-height:1.2}
