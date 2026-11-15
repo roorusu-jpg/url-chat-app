@@ -2,6 +2,8 @@ const express = require("express");
 const http = require("http");
 const crypto = require("crypto");
 const path = require("path");
+const fs = require("fs");
+const { Pool } = require("pg");
 const { WebSocketServer, WebSocket } = require("ws");
 
 const app = express();
@@ -9,13 +11,23 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true, maxPayload: 600 * 1024 });
 const PORT = process.env.PORT || 3000;
 const publicDir = path.join(__dirname, "public");
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: true },
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000
+    })
+  : null;
 
-// 学習用のメモリ保存です。Renderの再起動時にルームと履歴は消えます。
+// Neonに保存したルーム・メッセージを実行時に読み込む。
 const rooms = new Map();
-
-// INFINITY WORKS II の公式コミュニティルームは、サーバー起動時に常設する。
 const COMMUNITY_ROOM_ID = "080002";
-rooms.set(COMMUNITY_ROOM_ID, { messages: [], clients: new Map(), createdAt: Date.now(), permanent: true });
+
+if (pool) {
+  pool.on("error", (error) => console.error("PostgreSQL pool error:", error));
+}
 
 app.use(express.json());
 app.use(express.static(publicDir));
@@ -32,7 +44,7 @@ function makeRoomId() {
   return id;
 }
 
-app.post("/api/room", (req, res) => {
+app.post("/api/room", async (req, res) => {
   const requestedId = req.body?.id;
   let id;
   if (requestedId !== undefined && requestedId !== null && requestedId !== "") {
@@ -46,8 +58,19 @@ app.post("/api/room", (req, res) => {
   } else {
     id = makeRoomId();
   }
-  rooms.set(id, { messages: [], clients: new Map(), createdAt: Date.now() });
-  res.status(201).json({ id });
+  try {
+    if (pool) {
+      await pool.query("INSERT INTO chat_rooms (room_id) VALUES ($1)", [id]);
+    }
+    rooms.set(id, { messages: [], clients: new Map(), createdAt: Date.now() });
+    res.status(201).json({ id });
+  } catch (error) {
+    if (error.code === "23505") {
+      return res.status(409).json({ error: "その番号はすでに使われています。別の番号を選んでください。" });
+    }
+    console.error("Room creation failed:", error);
+    res.status(500).json({ error: "ルームを作成できませんでした。時間をおいて再度お試しください。" });
+  }
 });
 
 app.get("/api/room/:id", (req, res) => {
@@ -97,7 +120,7 @@ wss.on("connection", (ws, _request, roomId) => {
   ws.send(JSON.stringify({ type: "history", messages: room.messages.slice(-100) }));
   broadcastParticipants(room);
 
-  ws.on("message", (raw) => {
+  ws.on("message", async (raw) => {
     let payload;
     try {
       payload = JSON.parse(raw.toString());
@@ -128,7 +151,14 @@ wss.on("connection", (ws, _request, roomId) => {
       if (!target.readBy.includes(reader.clientId)) {
         target.readBy.push(reader.clientId);
         target.readCount = target.readBy.length;
-        broadcast(room, { type: "read_update", messageId: target.id, readCount: target.readCount });
+        try {
+          if (pool) {
+            await pool.query("UPDATE chat_messages SET read_by = $1::jsonb WHERE id = $2", [JSON.stringify(target.readBy), target.id]);
+          }
+          broadcast(room, { type: "read_update", messageId: target.id, readCount: target.readCount });
+        } catch (error) {
+          console.error("Read receipt save failed:", error);
+        }
       }
       return;
     }
@@ -151,9 +181,23 @@ wss.on("connection", (ws, _request, roomId) => {
       readBy: [],
       readCount: 0
     };
-    room.messages.push(message);
-    room.messages = room.messages.slice(-100);
-    broadcast(room, { type: "message", message });
+    try {
+      if (pool) {
+        await pool.query(
+          `INSERT INTO chat_messages (id, room_id, sender_id, sender_name, avatar, message_text, image_data, sent_at, read_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)`,
+          [message.id, roomId, message.senderId, message.name, message.avatar, message.text, message.image || null, message.time, JSON.stringify(message.readBy)]
+        );
+      }
+      room.messages.push(message);
+      room.messages = room.messages.slice(-100);
+      broadcast(room, { type: "message", message });
+    } catch (error) {
+      console.error("Message save failed:", error);
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "error", text: "メッセージを保存できませんでした。もう一度送信してください。" }));
+      }
+    }
   });
 
   ws.on("close", () => {
@@ -189,6 +233,63 @@ function broadcast(room, payload, except = null) {
 
 app.get("*", (_req, res) => res.sendFile(path.join(publicDir, "index.html")));
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`URL Chat listening on port ${PORT}`);
-});
+async function initializeDatabase() {
+  if (!pool) {
+    console.warn("DATABASE_URL is not set; using temporary in-memory chat storage.");
+    rooms.set(COMMUNITY_ROOM_ID, { messages: [], clients: new Map(), createdAt: Date.now(), permanent: true });
+    return;
+  }
+
+  const schema = fs.readFileSync(path.join(__dirname, "database", "schema.sql"), "utf8");
+  await pool.query(schema);
+
+  const roomResult = await pool.query("SELECT room_id, created_at, is_permanent FROM chat_rooms");
+  for (const row of roomResult.rows) {
+    rooms.set(String(row.room_id).trim(), {
+      messages: [],
+      clients: new Map(),
+      createdAt: new Date(row.created_at).getTime(),
+      permanent: row.is_permanent
+    });
+  }
+
+  const messageResult = await pool.query(`
+    SELECT id, room_id, sender_id, sender_name, avatar, message_text, image_data, sent_at, read_by
+    FROM (
+      SELECT m.*,
+        ROW_NUMBER() OVER (PARTITION BY room_id ORDER BY sent_at DESC, id DESC) AS row_number
+      FROM chat_messages m
+    ) recent
+    WHERE row_number <= 100
+    ORDER BY room_id, sent_at ASC, id ASC
+  `);
+  for (const row of messageResult.rows) {
+    const room = rooms.get(String(row.room_id).trim());
+    if (!room) continue;
+    const readBy = Array.isArray(row.read_by) ? row.read_by : [];
+    room.messages.push({
+      id: row.id,
+      room: String(row.room_id).trim(),
+      senderId: row.sender_id,
+      name: row.sender_name,
+      avatar: row.avatar,
+      text: row.message_text,
+      ...(row.image_data ? { image: row.image_data } : {}),
+      time: new Date(row.sent_at).toISOString(),
+      readBy,
+      readCount: readBy.length
+    });
+  }
+  console.log(`Loaded ${rooms.size} rooms from PostgreSQL.`);
+}
+
+initializeDatabase()
+  .then(() => {
+    server.listen(PORT, "0.0.0.0", () => {
+      console.log(`URL Chat listening on port ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Database initialization failed:", error);
+    process.exit(1);
+  });
