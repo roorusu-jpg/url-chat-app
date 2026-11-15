@@ -387,6 +387,11 @@ async function enterRoom(id) {
     }
   });
 }
+document.getElementById("communityQuickJoin")?.addEventListener("click", () => {
+  roomNumberInput.value = "080002";
+  nameInput.focus();
+  roomNumberInput.scrollIntoView({ behavior: "smooth", block: "center" });
+});
 joinForm.addEventListener("submit", joinRoom);
 createBtn.addEventListener("click", createRoom);
 roomNumberInput.addEventListener("input", () => {
