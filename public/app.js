@@ -24,7 +24,7 @@ const DEFAULT_BACKGROUND = "#f5f7fb";
 const accentColorInput = document.getElementById("accentColor");
 const resetAccentBtn = document.getElementById("resetAccentBtn");
 const DEFAULT_ACCENT = "#6878e4";
-const APP_VERSION = "1.0.4";
+const APP_VERSION = "1.1.0";
 const versionLabel = `v${APP_VERSION}`;
 document.getElementById("appVersion").textContent = versionLabel;
 document.getElementById("appVersionFooter").textContent = versionLabel;
@@ -376,6 +376,8 @@ async function enterRoom(id) {
       addSystem(data.text);
     } else if (data.type === "participants") {
       renderParticipants(data);
+    } else if (data.type === "error") {
+      setStatus(data.text || "エラーが発生しました。", "disconnected");
     } else if (data.type === "read_update" && data.messageId) {
       const message = currentMessages.find(item => item.id === data.messageId);
       if (message) {
