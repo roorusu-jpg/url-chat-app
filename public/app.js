@@ -24,7 +24,7 @@ const DEFAULT_BACKGROUND = "#f5f7fb";
 const accentColorInput = document.getElementById("accentColor");
 const resetAccentBtn = document.getElementById("resetAccentBtn");
 const DEFAULT_ACCENT = "#6878e4";
-const APP_VERSION = "1.0.3";
+const APP_VERSION = "1.0.4";
 const versionLabel = `v${APP_VERSION}`;
 document.getElementById("appVersion").textContent = versionLabel;
 document.getElementById("appVersionFooter").textContent = versionLabel;
@@ -387,6 +387,11 @@ async function enterRoom(id) {
     }
   });
 }
+document.getElementById("communityQuickJoin")?.addEventListener("click", () => {
+  roomNumberInput.value = "080002";
+  nameInput.focus();
+  roomNumberInput.scrollIntoView({ behavior: "smooth", block: "center" });
+});
 joinForm.addEventListener("submit", joinRoom);
 createBtn.addEventListener("click", createRoom);
 roomNumberInput.addEventListener("input", () => {

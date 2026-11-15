@@ -13,6 +13,10 @@ const publicDir = path.join(__dirname, "public");
 // 学習用のメモリ保存です。Renderの再起動時にルームと履歴は消えます。
 const rooms = new Map();
 
+// INFINITY WORKS II の公式コミュニティルームは、サーバー起動時に常設する。
+const COMMUNITY_ROOM_ID = "080002";
+rooms.set(COMMUNITY_ROOM_ID, { messages: [], clients: new Map(), createdAt: Date.now(), permanent: true });
+
 app.use(express.json());
 app.use(express.static(publicDir));
 
