@@ -3,6 +3,7 @@ const http = require("http");
 const crypto = require("crypto");
 const path = require("path");
 const { WebSocketServer, WebSocket } = require("ws");
+const { Pool } = require("pg");
 
 const app = express();
 const server = http.createServer(app);
@@ -10,12 +11,10 @@ const wss = new WebSocketServer({ noServer: true, maxPayload: 600 * 1024 });
 const PORT = process.env.PORT || 3000;
 const publicDir = path.join(__dirname, "public");
 
-// 学習用のメモリ保存です。Renderの再起動時にルームと履歴は消えます。
+// DATABASE_URL が設定されていれば Neon にルームとメッセージを永続保存する。
+const db = process.env.DATABASE_URL ? new Pool({ connectionString: process.env.DATABASE_URL, max: 5, ssl: { rejectUnauthorized: false } }) : null;
 const rooms = new Map();
-
-// INFINITY WORKS II の公式コミュニティルームは、サーバー起動時に常設する。
 const COMMUNITY_ROOM_ID = "080002";
-rooms.set(COMMUNITY_ROOM_ID, { messages: [], clients: new Map(), createdAt: Date.now(), permanent: true });
 
 app.use(express.json());
 app.use(express.static(publicDir));
@@ -32,7 +31,7 @@ function makeRoomId() {
   return id;
 }
 
-app.post("/api/room", (req, res) => {
+app.post("/api/room", async (req, res) => {
   const requestedId = req.body?.id;
   let id;
   if (requestedId !== undefined && requestedId !== null && requestedId !== "") {
@@ -46,8 +45,15 @@ app.post("/api/room", (req, res) => {
   } else {
     id = makeRoomId();
   }
-  rooms.set(id, { messages: [], clients: new Map(), createdAt: Date.now() });
-  res.status(201).json({ id });
+  try {
+    const createdAt = new Date();
+    if (db) await db.query("INSERT INTO chat_rooms (room_id, is_permanent, created_at) VALUES ($1, FALSE, $2)", [id, createdAt]);
+    rooms.set(id, { messages: [], clients: new Map(), createdAt: createdAt.getTime() });
+    res.status(201).json({ id });
+  } catch (error) {
+    console.error("Room creation failed:", error);
+    res.status(500).json({ error: "ルームを作成できませんでした。時間をおいて再度お試しください。" });
+  }
 });
 
 app.get("/api/room/:id", (req, res) => {
@@ -97,7 +103,7 @@ wss.on("connection", (ws, _request, roomId) => {
   ws.send(JSON.stringify({ type: "history", messages: room.messages.slice(-100) }));
   broadcastParticipants(room);
 
-  ws.on("message", (raw) => {
+  ws.on("message", async (raw) => {
     let payload;
     try {
       payload = JSON.parse(raw.toString());
@@ -127,6 +133,18 @@ wss.on("connection", (ws, _request, roomId) => {
       if (!Array.isArray(target.readBy)) target.readBy = [];
       if (!target.readBy.includes(reader.clientId)) {
         target.readBy.push(reader.clientId);
+        if (db) {
+          try {
+            await db.query(
+              "UPDATE chat_messages SET read_by = read_by || $1::jsonb WHERE id = $2 AND NOT (read_by @> $1::jsonb)",
+              [JSON.stringify([reader.clientId]), target.id]
+            );
+          } catch (error) {
+            console.error("Read receipt save failed:", error);
+            target.readBy.pop();
+            return;
+          }
+        }
         target.readCount = target.readBy.length;
         broadcast(room, { type: "read_update", messageId: target.id, readCount: target.readCount });
       }
@@ -151,6 +169,18 @@ wss.on("connection", (ws, _request, roomId) => {
       readBy: [],
       readCount: 0
     };
+    if (db) {
+      try {
+        await db.query(
+          "INSERT INTO chat_messages (id, room_id, sender_id, sender_name, avatar, message_text, image_data, sent_at, read_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '[]'::jsonb)",
+          [message.id, roomId, message.senderId || "", message.name, message.avatar, message.text, message.image || null, message.time]
+        );
+      } catch (error) {
+        console.error("Message save failed:", error);
+        ws.send(JSON.stringify({ type: "error", text: "メッセージを保存できませんでした。もう一度送信してください。" }));
+        return;
+      }
+    }
     room.messages.push(message);
     room.messages = room.messages.slice(-100);
     broadcast(room, { type: "message", message });
@@ -189,6 +219,85 @@ function broadcast(room, payload, except = null) {
 
 app.get("*", (_req, res) => res.sendFile(path.join(publicDir, "index.html")));
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`URL Chat listening on port ${PORT}`);
-});
+async function initializeDatabase() {
+  if (!db) {
+    console.warn("DATABASE_URL is not set; using temporary in-memory chat storage.");
+    rooms.set(COMMUNITY_ROOM_ID, { messages: [], clients: new Map(), createdAt: Date.now(), permanent: true });
+    return;
+  }
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS chat_rooms (
+      room_id CHAR(6) PRIMARY KEY,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      is_permanent BOOLEAN NOT NULL DEFAULT FALSE
+    )
+  `);
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id UUID PRIMARY KEY,
+      room_id CHAR(6) NOT NULL REFERENCES chat_rooms(room_id) ON DELETE CASCADE,
+      sender_id TEXT NOT NULL,
+      sender_name VARCHAR(30) NOT NULL,
+      avatar TEXT NOT NULL DEFAULT '😄',
+      message_text TEXT NOT NULL DEFAULT '',
+      image_data TEXT,
+      sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      read_by JSONB NOT NULL DEFAULT '[]'::jsonb
+    )
+  `);
+  await db.query("CREATE INDEX IF NOT EXISTS chat_messages_room_sent_idx ON chat_messages(room_id, sent_at DESC)");
+  await db.query(
+    "INSERT INTO chat_rooms (room_id, is_permanent) VALUES ($1, TRUE) ON CONFLICT (room_id) DO UPDATE SET is_permanent = TRUE",
+    [COMMUNITY_ROOM_ID]
+  );
+
+  const roomRows = await db.query("SELECT room_id, is_permanent, created_at FROM chat_rooms");
+  for (const row of roomRows.rows) {
+    rooms.set(row.room_id, {
+      messages: [],
+      clients: new Map(),
+      createdAt: new Date(row.created_at).getTime(),
+      permanent: row.is_permanent
+    });
+  }
+
+  const messageRows = await db.query(`
+    SELECT id, room_id, sender_id, sender_name, avatar, message_text, image_data, sent_at, read_by
+    FROM (
+      SELECT *, ROW_NUMBER() OVER (PARTITION BY room_id ORDER BY sent_at DESC) AS row_num
+      FROM chat_messages
+    ) recent
+    WHERE row_num <= 100
+    ORDER BY sent_at ASC
+  `);
+  for (const row of messageRows.rows) {
+    const room = rooms.get(row.room_id);
+    if (!room) continue;
+    const readBy = Array.isArray(row.read_by) ? row.read_by : [];
+    room.messages.push({
+      id: row.id,
+      room: row.room_id,
+      senderId: row.sender_id,
+      name: row.sender_name,
+      avatar: row.avatar,
+      text: row.message_text,
+      ...(row.image_data ? { image: row.image_data } : {}),
+      time: new Date(row.sent_at).toISOString(),
+      readBy,
+      readCount: readBy.length
+    });
+  }
+  console.log(`Loaded ${rooms.size} rooms and ${messageRows.rowCount} messages from Neon.`);
+}
+
+initializeDatabase()
+  .then(() => {
+    server.listen(PORT, "0.0.0.0", () => {
+      console.log(`URL Chat listening on port ${PORT}`);
+    });
+  })
+  .catch(error => {
+    console.error("Database initialization failed:", error);
+    process.exit(1);
+  });
