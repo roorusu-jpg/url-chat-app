@@ -246,7 +246,6 @@ async function initializeDatabase() {
       read_by JSONB NOT NULL DEFAULT '[]'::jsonb
     )
   `);
-  await db.query("CREATE INDEX IF NOT EXISTS chat_messages_room_sent_idx ON chat_messages(room_id, sent_at DESC)");
   await db.query(
     "INSERT INTO chat_rooms (room_id, is_permanent) VALUES ($1, TRUE) ON CONFLICT (room_id) DO UPDATE SET is_permanent = TRUE",
     [COMMUNITY_ROOM_ID]
